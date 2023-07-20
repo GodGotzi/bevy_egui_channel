@@ -1,0 +1,17 @@
+[package]
+name = "bevy_egui_channel_macros"
+description = "Proc macros for bevy_egui_channel"
+version = "0.1.0"
+edition = "2021"
+authors = ["GodGotzi"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro-crate = "1.3.1"
+bevy_macro_utils = "0.11.0"
+
+syn = "2.0.25"
+proc-macro2 = "1.0"
+quote = "1.0"
