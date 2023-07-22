@@ -1,14 +1,11 @@
 extern crate proc_macro;
-extern crate syn;
-extern crate quote;
 
 use proc_macro::TokenStream;
 use quote::quote;
 use syn::{parse, Ident, DeriveInput};
 
-#[proc_macro_derive(TypeEq)]
-pub fn type_eq_derive(input: TokenStream) -> TokenStream {
-
+#[proc_macro_derive(EventCollection)]
+pub fn event_collection_derive(input: TokenStream) -> TokenStream {
     let derive_input: DeriveInput = parse(input).unwrap();
     // Get the name of the enum
     let enum_name = &derive_input.ident;
@@ -21,6 +18,8 @@ pub fn type_eq_derive(input: TokenStream) -> TokenStream {
 
     // Generate the implementation for `TypeEq` trait
     let expanded = quote! {
+        use event_traits::TypeEq;
+
         impl TypeEq<#enum_name> for #enum_name {
             fn type_eq(&self, other: #enum_name) -> bool {
                 match (self, other) {
@@ -31,18 +30,19 @@ pub fn type_eq_derive(input: TokenStream) -> TokenStream {
         }
     };
 
-    // Return the generated implementation as a TokenStream
     TokenStream::from(expanded)
 }
 
-#[proc_macro_derive(EguiEventCollection)]
-pub fn egui_event_collection_derive(input: TokenStream) -> TokenStream {
-    let _derive_input: DeriveInput = parse(input).unwrap();
-    // Get the name of the enum
+macro_rules! generate_events {
+    () => {
+        #[derive(Clone, Debug)]
+        pub enum Item {
+            ToolbarWidth(TransferValue<f32>),
+            SettingsWidth(TransferValue<f32>),
+            LayerValue(TransferValue<u32>),
+            TimeValue(TransferValue<f32>),
+        }
 
-    // Generate the implementation for `TypeEq` trait
-    let expanded = quote! { };
-
-    // Return the generated implementation as a TokenStream
-    TokenStream::from(expanded)
+        impl TypeEq 
+    };
 }

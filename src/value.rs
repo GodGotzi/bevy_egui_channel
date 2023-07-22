@@ -24,6 +24,10 @@ impl <T> TransferValue<T> {
         self.value.as_ref()
     }
 
+    pub fn get_value_mut(&mut self) -> Option<&mut T> {
+        self.value.as_mut()
+    }
+
     pub fn value(&self) -> &T {
         self.value.as_ref().unwrap()
     }
