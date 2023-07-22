@@ -10,7 +10,7 @@ use crate::error::RegisterError;
 #[derive(Resource)]
 pub struct EventWrapper<V: ?Sized, T> {
     data: Vec<ComparatorChannel<T>>,
-    phantom: PhantomData<V>
+    _v: PhantomData<V>
 }
 
 impl <V: Copy, T: EventCollection<V> + Copy + Display> EventWrapper<V, T> {
@@ -18,7 +18,7 @@ impl <V: Copy, T: EventCollection<V> + Copy + Display> EventWrapper<V, T> {
     pub fn new(map: Vec<ComparatorChannel<T>>) -> Self {
         Self {
             data: map,
-            phantom: PhantomData::default()
+            _v: PhantomData::default()
         }
     }
 
