@@ -5,7 +5,7 @@ pub struct ComparatorChannel<T> {
     change_state: bool
 }
 
-impl <T> ComparatorChannel<T> {
+impl <T: PartialEq> ComparatorChannel<T> {
     pub fn new(default: T) -> Self {
         Self {
             transfer_val: TransferValue::with_default(default),
@@ -27,13 +27,25 @@ impl <T> ComparatorChannel<T> {
         self.change_state
     }
 
-    pub fn has_changed(&mut self) -> bool {
+    pub fn has_changed(&self) -> bool {
         self.change_state
     }
 
-    pub fn transfer(&mut self, new_value: T) {
+    pub fn transfer(&mut self, new_value: T) -> bool {
+        
+        if let Some(last) = self.transfer_val.get_value() {
+            if new_value.eq(last) {
+                self.transfer_val.change(new_value);
+
+                return false;
+            }
+        }
+
         self.transfer_val.change(new_value);
+
         self.changed();
+
+        true
     }
 
     pub fn get_value(&self) -> Option<&T> {

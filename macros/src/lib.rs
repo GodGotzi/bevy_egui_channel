@@ -19,7 +19,7 @@ pub fn event_collection_derive(input: TokenStream) -> TokenStream {
     };
 
     let type_enum = Ident::new(format!("{}Type", enum_name.to_string()).as_str(), Span::call_site());
-
+    
     // Generate the implementation for `TypeEq` trait
     let expanded = quote! {
 
@@ -35,6 +35,12 @@ pub fn event_collection_derive(input: TokenStream) -> TokenStream {
                     #((#enum_name::#variants(_), #type_enum::#variants) => true,) *
                     _ => false
                 }
+            }
+        }
+
+        impl EnumVec<#type_enum> for #type_enum {
+            fn as_vec() -> Vec<#type_enum> {
+                vec![#(#type_enum::#variants,)*]
             }
         }
 

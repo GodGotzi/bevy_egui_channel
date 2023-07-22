@@ -1,4 +1,4 @@
-use std::fmt::{Display, Debug};
+use std::fmt::Debug;
 
 pub struct RegisterError {
     msg: String
@@ -14,8 +14,8 @@ impl Debug for RegisterError {
 
 impl RegisterError {
 
-    pub fn channel_not_exits<T: Display>(event: T) -> Self {
-        Self { msg: format!("Channel with EventType: {event} not exists") }
+    pub fn channel_not_exits<T: Debug>(event: T) -> Self {
+        Self { msg: format!("Channel with EventType: {:?} not exists", event) }
     }
 
 }

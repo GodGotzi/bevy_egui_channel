@@ -1,4 +1,4 @@
-mod channel;
+pub mod channel;
 
 use std::{fmt::Display, marker::PhantomData};
 
@@ -13,7 +13,7 @@ pub struct EventWrapper<V: ?Sized, T> {
     _v: PhantomData<V>
 }
 
-impl <V: Copy, T: EventCollection<V> + Copy + Display> EventWrapper<V, T> {
+impl <V: Clone, T: EventCollection<V> + Clone + std::fmt::Debug + PartialEq> EventWrapper<V, T> {
 
     pub fn new(map: Vec<ComparatorChannel<T>>) -> Self {
         Self {
@@ -29,7 +29,7 @@ impl <V: Copy, T: EventCollection<V> + Copy + Display> EventWrapper<V, T> {
     pub fn find_channel_mut(&mut self, other: V) -> Option<&mut ComparatorChannel<T>> {
         self.data.iter_mut().find(|packet| {
             match packet.get_value() {
-                Some(val) => val.event_eq_type(other),
+                Some(val) => val.event_eq_type(other.clone()),
                 None => false,
             }
         })
@@ -37,7 +37,7 @@ impl <V: Copy, T: EventCollection<V> + Copy + Display> EventWrapper<V, T> {
 
     pub fn find_channel(&self, other: V) -> Option<&ComparatorChannel<T>> {
         self.data.iter().find(|packet| {
-            packet.get_value().unwrap().event_eq_type(other)
+            packet.get_value().unwrap().event_eq_type(other.clone())
         })
     }
 
