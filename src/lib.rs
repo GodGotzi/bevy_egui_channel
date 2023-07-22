@@ -22,6 +22,10 @@ mod test {
 
         assert!(event.event_eq_type(MyEventType::LayerValue));
         assert!(!event.event_eq_type(MyEventType::SettingsWidth));
+
+        assert!(MyEvent::ToolbarWidth(2.0).event_eq_type(MyEventType::ToolbarWidth));
+        assert!(MyEvent::TimeValue(2.0).event_eq_type(MyEventType::TimeValue));
+        assert!(!MyEvent::TimeValue(2.0).event_eq_type(MyEventType::ToolbarWidth));
     }
 
 }
