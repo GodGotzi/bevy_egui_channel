@@ -1,45 +1,47 @@
 mod channel;
 
-use std::fmt::Display;
+use std::{fmt::Display, marker::PhantomData};
 
 use bevy::prelude::*;
 use channel::ComparatorChannel;
+use event_traits::EventCollection;
 use crate::error::RegisterError;
-use crate::events::*;
 
 #[derive(Resource)]
-pub struct EventWrapper<T> {
-    data: Vec<ComparatorChannel<T>>
+pub struct EventWrapper<V: ?Sized, T> {
+    data: Vec<ComparatorChannel<T>>,
+    phantom: PhantomData<V>
 }
 
-impl <T: TypeEq<T> + Copy + Display> EventWrapper<T> {
+impl <V: Copy, T: EventCollection<V> + Copy + Display> EventWrapper<V, T> {
 
     pub fn new(map: Vec<ComparatorChannel<T>>) -> Self {
         Self {
-            data: map
+            data: map,
+            phantom: PhantomData::default()
         }
     }
 
-    pub fn get_data(&mut self) -> &mut Vec<ComparatorChannel<T>> {
-        &mut self.data
+    pub fn get_data(&self) -> &Vec<ComparatorChannel<T>> {
+        &self.data
     }
 
-    pub fn find_channel_mut(&mut self, other: T) -> Option<&mut ComparatorChannel<T>> {
+    pub fn find_channel_mut(&mut self, other: V) -> Option<&mut ComparatorChannel<T>> {
         self.data.iter_mut().find(|packet| {
             match packet.get_value() {
-                Some(val) => val.type_eq(other),
+                Some(val) => val.event_eq_type(other),
                 None => false,
             }
         })
     }
 
-    pub fn find_channel(&self, item: T) -> Option<&ComparatorChannel<T>> {
+    pub fn find_channel(&self, other: V) -> Option<&ComparatorChannel<T>> {
         self.data.iter().find(|packet| {
-            packet.get_value().unwrap().type_eq(item)
+            packet.get_value().unwrap().event_eq_type(other)
         })
     }
 
-    pub fn get_channel_value(&self, other: T) -> Option<&T> {
+    pub fn get_channel_value(&self, other: V) -> Option<&T> {
         let option_channel = self.find_channel(other);
 
         if let Some(channel) = option_channel {
@@ -51,20 +53,22 @@ impl <T: TypeEq<T> + Copy + Display> EventWrapper<T> {
 
     pub fn register(
         &mut self,
+        event_type: V,
         event: T
     ) {
-        self.register_safe(event).unwrap()
+        self.register_safely(event_type, event).unwrap()
     }
 
-    pub fn register_with_ref<V>(&mut self, default: T) -> &mut T {
-        self.register_safe_with_ref(default).unwrap()
+    pub fn register_with_ref(&mut self, event_type: V, default: T) -> &mut T {
+        self.register_safely_with_ref(event_type, default).unwrap()
     }
 
-    pub fn register_safe(
+    pub fn register_safely(
         &mut self,
+        event_type: V,
         event: T
     ) -> Result<(), RegisterError> {
-        let opt_channel = self.find_channel_mut(event);
+        let opt_channel = self.find_channel_mut(event_type);
 
         if let Some(channel) = opt_channel {
             channel.transfer(event);
@@ -75,8 +79,8 @@ impl <T: TypeEq<T> + Copy + Display> EventWrapper<T> {
         }
     }
 
-    pub fn register_safe_with_ref(&mut self, default: T) -> Result<&mut T, RegisterError> {
-        let opt_channel = self.find_channel_mut(default);
+    pub fn register_safely_with_ref(&mut self, event_type: V, default: T) -> Result<&mut T, RegisterError> {
+        let opt_channel = self.find_channel_mut(event_type);
 
         if let Some(channel) = opt_channel {
             if channel.get_value().is_none() {

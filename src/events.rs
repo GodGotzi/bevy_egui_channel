@@ -1,2 +1,2 @@
-pub use event_traits::EguiEventCollection;
-pub use event_traits::TypeEq;
+pub use event_traits::EventCollection;
+pub use bevy_egui_events_macros::EventCollection;

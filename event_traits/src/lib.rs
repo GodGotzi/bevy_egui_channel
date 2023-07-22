@@ -1,5 +1,3 @@
-pub trait TypeEq<T> {
-    fn type_eq(&self, other: T) -> bool;
+pub trait EventCollection<T> {
+    fn event_eq_type(&self, other: T) -> bool;
 }
-
-pub trait EguiEventCollection {}

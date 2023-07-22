@@ -1,6 +1,8 @@
 extern crate proc_macro;
 
+
 use proc_macro::TokenStream;
+use proc_macro2::Span;
 use quote::quote;
 use syn::{parse, Ident, DeriveInput};
 
@@ -16,33 +18,27 @@ pub fn event_collection_derive(input: TokenStream) -> TokenStream {
         syn::Data::Union(_) => panic!("Union are not supported with TypeEq"),
     };
 
+    let type_enum = Ident::new(format!("{}Type", enum_name.to_string()).as_str(), Span::call_site());
+
     // Generate the implementation for `TypeEq` trait
     let expanded = quote! {
-        use event_traits::TypeEq;
 
-        impl TypeEq<#enum_name> for #enum_name {
-            fn type_eq(&self, other: #enum_name) -> bool {
+        #[allow(dead_code)]
+        #[derive(Debug, Copy, Clone)]
+        pub enum #type_enum {
+            #(#variants,)*
+        }
+
+        impl EventCollection<#type_enum> for #enum_name {
+            fn event_eq_type(&self, other: #type_enum) -> bool {
                 match (self, other) {
-                    #((#enum_name::#variants(_), #enum_name::#variants(_)) => true,) *
+                    #((#enum_name::#variants(_), #type_enum::#variants) => true,) *
                     _ => false
-                } 
+                }
             }
         }
+
     };
 
     TokenStream::from(expanded)
-}
-
-macro_rules! generate_events {
-    () => {
-        #[derive(Clone, Debug)]
-        pub enum Item {
-            ToolbarWidth(TransferValue<f32>),
-            SettingsWidth(TransferValue<f32>),
-            LayerValue(TransferValue<u32>),
-            TimeValue(TransferValue<f32>),
-        }
-
-        impl TypeEq 
-    };
 }
