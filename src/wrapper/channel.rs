@@ -13,7 +13,7 @@ impl <T: PartialEq> ComparatorChannel<T> {
         }
     }
 
-    fn changed(&mut self) {
+    pub fn changed(&mut self) {
         self.change_state = true;
     }
 
@@ -31,7 +31,7 @@ impl <T: PartialEq> ComparatorChannel<T> {
         self.change_state
     }
 
-    pub fn transfer(&mut self, new_value: T) -> bool {
+    pub fn transfer(&mut self, new_value: T, record_change: bool) -> bool {
         
         if let Some(last) = self.transfer_val.get_value() {
             if new_value.eq(last) {
@@ -43,7 +43,9 @@ impl <T: PartialEq> ComparatorChannel<T> {
 
         self.transfer_val.change(new_value);
 
-        self.changed();
+        if record_change {
+            self.changed();
+        }
 
         true
     }

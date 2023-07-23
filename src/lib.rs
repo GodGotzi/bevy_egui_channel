@@ -5,12 +5,10 @@ mod value;
 
 mod test {
 
-    use crate::wrapper::{EventWrapper, channel::ComparatorChannel};
-
     use super::events::*;
 
     #[allow(dead_code)]
-    #[derive(EventCollection, Clone, Debug, PartialEq)]
+    #[derive(EventCollection, Debug, Clone, PartialEq)]
     pub enum MyEvent {
         ToolbarWidth(f32),
         SettingsWidth(f32),
@@ -31,11 +29,14 @@ mod test {
     }
 
     #[test]
-    fn event_wrapper() -> Result<(), crate::error::RegisterError> {
-        let mut channel_list = Vec::<ComparatorChannel<MyEvent>>::new();
-        channel_list.push(ComparatorChannel::new(MyEvent::LayerValue(2)));
-        channel_list.push(ComparatorChannel::new(MyEvent::SettingsWidth(10.0)));
-        channel_list.push(ComparatorChannel::new(MyEvent::ToolbarWidth(15.0)));
+    fn event_wrapper() -> Result<(), crate::error::WrapperError> {
+        use std::collections::HashMap;
+        use crate::wrapper::{channel::ComparatorChannel, EventWrapper};
+
+        let mut channel_list = HashMap::<MyEventType, ComparatorChannel<MyEvent>>::new();
+        channel_list.insert(MyEventType::LayerValue, ComparatorChannel::new(MyEvent::LayerValue(2)));
+        channel_list.insert(MyEventType::SettingsWidth, ComparatorChannel::new(MyEvent::SettingsWidth(10.0)));
+        channel_list.insert(MyEventType::ToolbarWidth, ComparatorChannel::new(MyEvent::ToolbarWidth(15.0)));
 
         let mut wrapper = EventWrapper::new(channel_list);
 
@@ -60,18 +61,23 @@ mod test {
         assert_eq!(wrapper.get_channel_value(MyEventType::SettingsWidth), Some(&MyEvent::SettingsWidth(300.0)));
         assert!(wrapper.find_channel(MyEventType::SettingsWidth).unwrap().has_changed());
 
-        let channel_value = wrapper.register_safely_with_ref(MyEventType::ToolbarWidth, MyEvent::ToolbarWidth(2.0));
+        wrapper.register_safely_with_ref_track(MyEventType::ToolbarWidth, (), |value, _ctx| {
+            *value = MyEvent::ToolbarWidth(80.0);
+        })?;
 
-        if let Ok(MyEvent::ToolbarWidth(width)) = channel_value {
-            *width = 120.0;
-        } else {
-            assert!(false);
-        }
+        assert!(wrapper.find_channel(MyEventType::ToolbarWidth).unwrap().has_changed());
+        assert_eq!(wrapper.read_channel_value(MyEventType::ToolbarWidth), Some(&MyEvent::ToolbarWidth(80.0)));
+        assert!(!wrapper.find_channel(MyEventType::ToolbarWidth).unwrap().has_changed());
 
-        assert_eq!(wrapper.get_channel_value(MyEventType::ToolbarWidth), Some(&MyEvent::ToolbarWidth(120.0)));
-        assert!(wrapper.find_channel(MyEventType::ToolbarWidth).unwrap().has_changed());
-        assert_eq!(wrapper.get_channel_value(MyEventType::ToolbarWidth), Some(&MyEvent::ToolbarWidth(120.0)));
-        assert!(wrapper.find_channel(MyEventType::ToolbarWidth).unwrap().has_changed());
+        wrapper.register_safely_with_ref_track(MyEventType::SettingsWidth, (), |value, _ctx| {
+            *value = MyEvent::SettingsWidth(100.0);
+        })?;
+
+        assert!(wrapper.find_channel(MyEventType::SettingsWidth).unwrap().has_changed());
+        assert_ne!(wrapper.get_channel_value(MyEventType::SettingsWidth), Some(&MyEvent::SettingsWidth(5.0)));
+        assert!(wrapper.find_channel(MyEventType::SettingsWidth).unwrap().has_changed());
+        assert_eq!(wrapper.read_channel_value(MyEventType::SettingsWidth), Some(&MyEvent::SettingsWidth(100.0)));
+        assert!(!wrapper.find_channel(MyEventType::SettingsWidth).unwrap().has_changed());
 
         Ok(())
     }

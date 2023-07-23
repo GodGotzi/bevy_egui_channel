@@ -24,7 +24,7 @@ pub fn event_collection_derive(input: TokenStream) -> TokenStream {
     let expanded = quote! {
 
         #[allow(dead_code)]
-        #[derive(Debug, Copy, Clone)]
+        #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
         pub enum #type_enum {
             #(#variants,)*
         }

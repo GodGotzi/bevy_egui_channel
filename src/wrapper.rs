@@ -1,49 +1,48 @@
 pub mod channel;
 
-use std::{fmt::Display, marker::PhantomData};
+use std::{collections::HashMap, hash::Hash};
 
 use bevy::prelude::*;
 use channel::ComparatorChannel;
 use event_traits::EventCollection;
-use crate::error::RegisterError;
+use crate::error::WrapperError;
 
 #[derive(Resource)]
-pub struct EventWrapper<V: ?Sized, T> {
-    data: Vec<ComparatorChannel<T>>,
-    _v: PhantomData<V>
+pub struct EventWrapper<K, T> {
+    map: HashMap<K, ComparatorChannel<T>>,
 }
 
-impl <V: Clone, T: EventCollection<V> + Clone + std::fmt::Debug + PartialEq> EventWrapper<V, T> {
+impl <V: Clone + PartialEq + Eq + Hash + std::fmt::Debug , T: EventCollection<V> + Clone + PartialEq> EventWrapper<V, T> {
 
-    pub fn new(map: Vec<ComparatorChannel<T>>) -> Self {
+    pub fn new(map: HashMap<V, ComparatorChannel<T>>) -> Self {
         Self {
-            data: map,
-            _v: PhantomData::default()
+            map,
         }
     }
 
-    pub fn get_data(&self) -> &Vec<ComparatorChannel<T>> {
-        &self.data
+    pub fn get_map(&self) -> &HashMap<V, ComparatorChannel<T>> {
+        &self.map
     }
 
     pub fn find_channel_mut(&mut self, other: V) -> Option<&mut ComparatorChannel<T>> {
-        self.data.iter_mut().find(|packet| {
-            match packet.get_value() {
-                Some(val) => val.event_eq_type(other.clone()),
-                None => false,
-            }
-        })
+        self.map.get_mut(&other)
     }
 
     pub fn find_channel(&self, other: V) -> Option<&ComparatorChannel<T>> {
-        self.data.iter().find(|packet| {
-            packet.get_value().unwrap().event_eq_type(other.clone())
-        })
+        self.map.get(&other)
     }
 
-    pub fn get_channel_value(&self, other: V) -> Option<&T> {
-        let option_channel = self.find_channel(other);
+    pub fn read_channel_value(&mut self, other: V) -> Option<&T> {
+        if let Some(channel) = self.map.get_mut(&other) {
+            channel.read();
+            Some(channel.value())
+        } else {
+            None
+        }
+    }
 
+    pub fn get_channel_value(&mut self, other: V) -> Option<&T> {
+        let option_channel = self.map.get(&other);
         if let Some(channel) = option_channel {
             return channel.get_value();
         }
@@ -59,37 +58,45 @@ impl <V: Clone, T: EventCollection<V> + Clone + std::fmt::Debug + PartialEq> Eve
         self.register_safely(event_type, event).unwrap()
     }
 
-    pub fn register_with_ref(&mut self, event_type: V, default: T) -> &mut T {
-        self.register_safely_with_ref(event_type, default).unwrap()
+    pub fn register_with_ref_track<C>(&mut self, event_type: V, ref_ctx: C, ref_track: fn(&mut T, C)) {
+        self.register_safely_with_ref_track(event_type, ref_ctx, ref_track).unwrap();
     }
 
     pub fn register_safely(
         &mut self,
         event_type: V,
         event: T
-    ) -> Result<(), RegisterError> {
-        let opt_channel = self.find_channel_mut(event_type);
+    ) -> Result<(), WrapperError> {
+        let opt_channel = self.map.get_mut(&event_type);
 
         if let Some(channel) = opt_channel {
-            channel.transfer(event);
+            channel.transfer(event, true);
 
             Ok(())
         } else {
-            Err(RegisterError::channel_not_exits(event))
+            Err(WrapperError::channel_not_exits(event_type))
         }
     }
 
-    pub fn register_safely_with_ref(&mut self, event_type: V, default: T) -> Result<&mut T, RegisterError> {
-        let opt_channel = self.find_channel_mut(event_type);
+    pub fn register_safely_with_ref_track<C>(&mut self, event_type: V, ref_ctx: C, ref_track: fn(&mut T, C)) -> Result<&mut T, WrapperError> {
+        let opt_channel = self.map.get_mut(&event_type);
 
         if let Some(channel) = opt_channel {
             if channel.get_value().is_none() {
-                channel.transfer(default);
+                return Err(WrapperError::channel_not_exits(event_type));
+            }
+
+            let last = channel.get_value().unwrap().clone();
+
+            ref_track(channel.get_value_mut().unwrap(), ref_ctx);
+
+            if !last.eq(&last) {
+                channel.changed();
             }
 
             Ok(channel.get_value_mut().unwrap())
         } else {
-            Err(RegisterError::channel_not_exits(default))
+            Err(WrapperError::channel_not_exits(event_type))
         }
     }
 
