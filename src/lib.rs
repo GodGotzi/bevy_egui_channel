@@ -4,8 +4,8 @@ pub mod events;
 mod value;
 
 mod test {
-
     use super::events::*;
+    use crate as bevy_egui_events;
 
     #[allow(dead_code)]
     #[derive(EventCollection, Debug, Clone, PartialEq)]
@@ -38,7 +38,7 @@ mod test {
         channel_list.insert(MyEventType::SettingsWidth, ComparatorChannel::new(MyEvent::SettingsWidth(10.0)));
         channel_list.insert(MyEventType::ToolbarWidth, ComparatorChannel::new(MyEvent::ToolbarWidth(15.0)));
 
-        let mut wrapper = EventWrapper::new(channel_list);
+        let mut wrapper = EventWrapper::with_initialization(channel_list);
 
         assert!(wrapper.find_channel(MyEventType::SettingsWidth).is_some());
         assert!(wrapper.find_channel(MyEventType::TimeValue).is_none());
@@ -47,21 +47,21 @@ mod test {
         assert_ne!(wrapper.get_channel_value(MyEventType::LayerValue), Some(&MyEvent::SettingsWidth(2.0)));
         assert_eq!(wrapper.get_channel_value(MyEventType::LayerValue), Some(&MyEvent::LayerValue(2)));
         assert_eq!(wrapper.get_channel_value(MyEventType::ToolbarWidth), Some(&MyEvent::ToolbarWidth(15.0)));
-
-        wrapper.register_safely(MyEventType::LayerValue, MyEvent::LayerValue(100))?;
+        
+        wrapper.register_safely(MyEvent::LayerValue(100))?;
         
         assert_ne!(wrapper.get_channel_value(MyEventType::LayerValue), Some(&MyEvent::LayerValue(2)));
         assert_eq!(wrapper.get_channel_value(MyEventType::LayerValue), Some(&MyEvent::LayerValue(100)));
         assert!(wrapper.find_channel(MyEventType::LayerValue).unwrap().has_changed());
         
-        wrapper.register_safely(MyEventType::SettingsWidth, MyEvent::SettingsWidth(300.0))?;
+        wrapper.register_safely(MyEvent::SettingsWidth(300.0))?;
         
         assert_ne!(wrapper.get_channel_value(MyEventType::SettingsWidth), Some(&MyEvent::SettingsWidth(2.0)));
         assert_ne!(wrapper.get_channel_value(MyEventType::SettingsWidth), Some(&MyEvent::SettingsWidth(100.0)));
         assert_eq!(wrapper.get_channel_value(MyEventType::SettingsWidth), Some(&MyEvent::SettingsWidth(300.0)));
         assert!(wrapper.find_channel(MyEventType::SettingsWidth).unwrap().has_changed());
 
-        wrapper.register_safely_with_ref_track(MyEventType::ToolbarWidth, (), |value, _ctx| {
+        wrapper.register_safely_with_ref_track(MyEventType::ToolbarWidth, |value| {
             *value = MyEvent::ToolbarWidth(80.0);
         })?;
 
@@ -69,7 +69,7 @@ mod test {
         assert_eq!(wrapper.read_channel_value(MyEventType::ToolbarWidth), Some(&MyEvent::ToolbarWidth(80.0)));
         assert!(!wrapper.find_channel(MyEventType::ToolbarWidth).unwrap().has_changed());
 
-        wrapper.register_safely_with_ref_track(MyEventType::SettingsWidth, (), |value, _ctx| {
+        wrapper.register_safely_with_ref_track(MyEventType::SettingsWidth, |value| {
             *value = MyEvent::SettingsWidth(100.0);
         })?;
 
@@ -79,7 +79,33 @@ mod test {
         assert_eq!(wrapper.read_channel_value(MyEventType::SettingsWidth), Some(&MyEvent::SettingsWidth(100.0)));
         assert!(!wrapper.find_channel(MyEventType::SettingsWidth).unwrap().has_changed());
 
+        wrapper.register_safely(MyEvent::SettingsWidth(45.0))?;
+        wrapper.register_safely(MyEvent::ToolbarWidth(45.0))?;
+
+        let multiply = |x: u32, y: u32| x*y;
+
+        wrapper.register_safely_with_ref_ctx_track(MyEventType::LayerValue, multiply, |ref_event, multiply| {
+            *ref_event = MyEvent::LayerValue(multiply(5, 9));
+        })?;
+
+        let changes = wrapper.collect_changes();
+
+        assert!(changes.len() == 3);
+        assert_ne!(wrapper.read_channel_value(MyEventType::SettingsWidth), Some(&MyEvent::SettingsWidth(100.0)));
+
+        let changes = wrapper.read_changes();
+
+        assert!(changes.len() == 2);
+
+        let changes = wrapper.read_changes();
+        assert!(changes.is_empty());
+
+        let changes = wrapper.collect_changes();
+        assert!(changes.is_empty());
+
         Ok(())
     }
+
+
 
 }

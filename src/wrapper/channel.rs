@@ -1,5 +1,6 @@
 use crate::value::TransferValue;
-    
+
+#[derive(PartialEq, Eq, Hash)]
 pub struct ComparatorChannel<T> {
     transfer_val: TransferValue<T>,
     change_state: bool

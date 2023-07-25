@@ -5,3 +5,7 @@ pub trait EventCollection<T> {
 pub trait EnumVec<T> {
     fn as_vec() -> Vec<T>;
 }
+
+pub trait Opposite<T> {
+    fn opposite(&self) -> T; 
+}

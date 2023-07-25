@@ -6,6 +6,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = { version = "0.11", default-features = false } 
+bevy = { version = "0.11" }
+bevy_egui = "0.21.0"
 bevy_egui_events_macros = { path = "macros" }
 event_traits = { path = "event_traits" }
+bimap = "0.6.3"
+
+[[example]]
+name = "simple"
+path = "examples/simple.rs"
+
+[[example]]
+name = "checkbox"
+path = "examples/checkbox.rs"
+
+[[example]]
+name = "init"
+path = "examples/init.rs"
