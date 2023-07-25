@@ -22,7 +22,6 @@ pub fn event_collection_derive(input: TokenStream) -> TokenStream {
     
     // Generate the implementation for `TypeEq` trait
     let expanded = quote! {
-        use bevy_egui_events::events::*;
 
         #[allow(dead_code)]
         #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]

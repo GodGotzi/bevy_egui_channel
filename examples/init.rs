@@ -2,7 +2,7 @@ use bevy::DefaultPlugins;
 use bevy::prelude::{App, Update, ResMut};
 use bevy_egui::{EguiPlugin, EguiContexts};
 use bevy_egui_events::wrapper::EventWrapper;
-use bevy_egui_events::events::EventCollection;
+use bevy_egui_events::events::*;
 use bevy_egui::egui;
 
 #[derive(EventCollection, Debug, Clone, PartialEq)]

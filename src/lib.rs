@@ -1,11 +1,12 @@
 pub mod wrapper;
 pub mod error;
 pub mod events;
+pub use events::*;
 mod value;
+
 
 mod test {
     use super::events::*;
-    use crate as bevy_egui_events;
 
     #[allow(dead_code)]
     #[derive(EventCollection, Debug, Clone, PartialEq)]
